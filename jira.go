@@ -63,15 +63,18 @@ type IssueList struct {
 }
 
 type IssueFields struct {
-	IssueType   *IssueType
-	Summary     string
-	Description string
-	Status      *IssueStatus
-	Comment     *IssueComment
-	Reporter    *User
-	Assignee    *User
-	Project     *JiraProject
-	Created     string
+	IssueType        *IssueType
+	Summary          string
+	Description      string
+	Status           *IssueStatus
+	Comment          *IssueComment
+	Reporter         *User
+	Assignee         *User
+	Sponsor          *User `json:"customfield_10300"`
+	CodeReviewer     *User `json:"customfield_10202"`
+	PrimaryDeveloper *User `json:"customfield_10203"`
+	Project          *JiraProject
+	Created          string
 }
 
 type IssueType struct {

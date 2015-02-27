@@ -67,6 +67,7 @@ type IssueFields struct {
 	Summary     string
 	Description string
 	Status      *IssueStatus
+	Comment     *IssueComment
 	Reporter    *User
 	Assignee    *User
 	Project     *JiraProject
@@ -85,6 +86,16 @@ type IssueType struct {
 type IssueStatus struct {
 	Description string
 	Name        string
+}
+
+type IssueComment struct {
+	Comments []Comment
+}
+
+type Comment struct {
+	Author  *User `json:"author"`
+	Body    string
+	Created string
 }
 
 type JiraProject struct {

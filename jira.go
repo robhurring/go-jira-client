@@ -1,6 +1,7 @@
 package gojira
 
 import (
+	"bytes"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -150,6 +152,21 @@ type Text struct {
 	Body string `xml:",chardata"json:"body"`
 }
 
+type Params map[string]string
+
+func (p Params) Query() string {
+	var buffer bytes.Buffer
+
+	for k, v := range p {
+		buffer.WriteString(k)
+		buffer.WriteString("=")
+		buffer.WriteString(url.QueryEscape(v))
+		buffer.WriteString("&")
+	}
+
+	return strings.TrimRight(buffer.String(), "&")
+}
+
 func NewJira(baseUrl string, apiPath string, activityPath string, auth *Auth) *Jira {
 
 	client := &http.Client{}
@@ -234,9 +251,15 @@ func (j *Jira) IssuesAssignedTo(user string, maxResults int, startAt int) IssueL
 }
 
 // search an issue by its id
-func (j *Jira) Issue(id string) Issue {
+func (j *Jira) Issue(id string, params Params) Issue {
 
 	url := j.BaseUrl + j.ApiPath + "/issue/" + id
+
+	if params != nil {
+		url += "?" + params.Query()
+		fmt.Println(url)
+	}
+
 	contents := j.buildAndExecRequest("GET", url)
 
 	var issue Issue

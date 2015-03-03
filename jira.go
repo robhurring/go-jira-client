@@ -257,7 +257,6 @@ func (j *Jira) Issue(id string, params Params) Issue {
 
 	if params != nil {
 		url += "?" + params.Query()
-		fmt.Println(url)
 	}
 
 	contents := j.buildAndExecRequest("GET", url)

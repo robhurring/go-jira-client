@@ -72,11 +72,26 @@ type IssueFields struct {
 	Comment          *IssueComment
 	Reporter         *User
 	Assignee         *User
-	Sponsor          *User `json:"customfield_10300"`
-	CodeReviewer     *User `json:"customfield_10202"`
-	PrimaryDeveloper *User `json:"customfield_10203"`
+	Sponsor          *User        `json:"customfield_10300"`
+	CodeReviewer     *User        `json:"customfield_10202"`
+	PrimaryDeveloper *User        `json:"customfield_10203"`
+	QAReviewer       *User        `json:"customfield_12200"`
+	ReleaseManager   *User        `json:"customfield_12300"`
+	Comopnents       []*Component `json:"components"`
+	IssueLinks       []*IssueLink `json:"issuelinks,omitempty"`
 	Project          *JiraProject
 	Created          string
+}
+
+type IssueLink struct {
+	Self         string     `json:"self"`
+	Type         *IssueType `json:"type"`
+	InwardIssue  *Issue     `json:"inwardIssue,omitempty"`
+	OutwardIssue *Issue     `json:"outwardIssue,omitempty"`
+}
+
+type Component struct {
+	Name string `json:"name"`
 }
 
 type IssueType struct {
@@ -264,7 +279,7 @@ func (j *Jira) Issue(id string, params Params) Issue {
 	var issue Issue
 	err := json.Unmarshal(contents, &issue)
 	if err != nil {
-		fmt.Println("%s", err)
+		panic(err)
 	}
 
 	return issue

@@ -78,7 +78,7 @@ type IssueFields struct {
 	QAReviewer       *User        `json:"customfield_12200"`
 	ReleaseManager   *User        `json:"customfield_12300"`
 	Comopnents       []*Component `json:"components"`
-	IssueLinks       []*IssueLink `json:"issuelinks,omitempty"`
+	IssueLinks       []*IssueLink `json:"issuelinks"`
 	Project          *JiraProject
 	Created          string
 }
@@ -86,8 +86,8 @@ type IssueFields struct {
 type IssueLink struct {
 	Self         string     `json:"self"`
 	Type         *IssueType `json:"type"`
-	InwardIssue  *Issue     `json:"inwardIssue,omitempty"`
-	OutwardIssue *Issue     `json:"outwardIssue,omitempty"`
+	InwardIssue  *Issue     `json:"inwardIssue"`
+	OutwardIssue *Issue     `json:"outwardIssue"`
 }
 
 type Component struct {
@@ -302,7 +302,7 @@ func (j *Jira) IssuesAssignedTo(user string, maxResults int, startAt int) (issue
 }
 
 // search an issue by its id
-func (j *Jira) Issue(id string, params Params) (issue Issue, err error) {
+func (j *Jira) Issue(id string, params Params) (issue *Issue, err error) {
 
 	url := j.BaseUrl + j.ApiPath + "/issue/" + id
 

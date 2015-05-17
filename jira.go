@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"encoding/xml"
-	"fmt"
+	"errors"
 	"io/ioutil"
 	"math"
 	"net/http"
@@ -182,6 +182,22 @@ func (p Params) Query() string {
 	return strings.TrimRight(buffer.String(), "&")
 }
 
+type ErrorResponse struct {
+	Messages   []string          `json:"errorMessages"`
+	Errors     map[string]string `json:"errors"`
+	Status     string
+	StatusCode int
+}
+
+func (e *ErrorResponse) String() string {
+	if len(e.Messages) > 0 {
+		message := e.Messages[0]
+		return e.Status + ": " + message
+	}
+
+	return e.Status
+}
+
 func NewJira(baseUrl string, apiPath string, activityPath string, auth *Auth) *Jira {
 
 	client := &http.Client{}
@@ -199,22 +215,43 @@ const (
 	dateLayout = "2006-01-02T15:04:05.000-0700"
 )
 
-func (j *Jira) buildAndExecRequest(method string, url string) []byte {
+func okStatus(code int) bool {
+	switch {
+	case 200 <= code && code < 300:
+		return true
+	}
+
+	return false
+}
+
+func (j *Jira) buildAndExecRequest(method string, url string) (contents []byte, err error) {
 
 	req, err := http.NewRequest(method, url, nil)
 	if err != nil {
-		panic("Error while building jira request")
+		err = errors.New("Error while building jira request")
+		return
 	}
 	req.SetBasicAuth(j.Auth.Login, j.Auth.Password)
 
 	resp, err := j.Client.Do(req)
 	defer resp.Body.Close()
-	contents, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Printf("%s", err)
+	contents, err = ioutil.ReadAll(resp.Body)
+
+	if !okStatus(resp.StatusCode) {
+		errResponse := new(ErrorResponse)
+		err = json.Unmarshal(contents, &errResponse)
+		errResponse.Status = resp.Status
+		errResponse.StatusCode = resp.StatusCode
+
+		if err != nil {
+			return
+		}
+
+		err = errors.New(errResponse.String())
+		return
 	}
 
-	return contents
+	return
 }
 
 func (j *Jira) UserActivity(user string) (ActivityFeed, error) {
@@ -223,29 +260,28 @@ func (j *Jira) UserActivity(user string) (ActivityFeed, error) {
 	return j.Activity(url)
 }
 
-func (j *Jira) Activity(url string) (ActivityFeed, error) {
-
-	contents := j.buildAndExecRequest("GET", url)
-
-	var activity ActivityFeed
-	err := xml.Unmarshal(contents, &activity)
+func (j *Jira) Activity(url string) (activity ActivityFeed, err error) {
+	contents, err := j.buildAndExecRequest("GET", url)
 	if err != nil {
-		fmt.Println("%s", err)
+		return
 	}
 
-	return activity, err
+	err = xml.Unmarshal(contents, &activity)
+	return
 }
 
 // search issues assigned to given user
-func (j *Jira) IssuesAssignedTo(user string, maxResults int, startAt int) IssueList {
+func (j *Jira) IssuesAssignedTo(user string, maxResults int, startAt int) (issues IssueList, err error) {
 
 	url := j.BaseUrl + j.ApiPath + "/search?jql=assignee=\"" + url.QueryEscape(user) + "\"&startAt=" + strconv.Itoa(startAt) + "&maxResults=" + strconv.Itoa(maxResults)
-	contents := j.buildAndExecRequest("GET", url)
-
-	var issues IssueList
-	err := json.Unmarshal(contents, &issues)
+	contents, err := j.buildAndExecRequest("GET", url)
 	if err != nil {
-		fmt.Println("%s", err)
+		return
+	}
+
+	err = json.Unmarshal(contents, &issues)
+	if err != nil {
+		return
 	}
 
 	for _, issue := range issues.Issues {
@@ -262,11 +298,11 @@ func (j *Jira) IssuesAssignedTo(user string, maxResults int, startAt int) IssueL
 
 	issues.Pagination = &pagination
 
-	return issues
+	return
 }
 
 // search an issue by its id
-func (j *Jira) Issue(id string, params Params) Issue {
+func (j *Jira) Issue(id string, params Params) (issue Issue, err error) {
 
 	url := j.BaseUrl + j.ApiPath + "/issue/" + id
 
@@ -274,13 +310,11 @@ func (j *Jira) Issue(id string, params Params) Issue {
 		url += "?" + params.Query()
 	}
 
-	contents := j.buildAndExecRequest("GET", url)
-
-	var issue Issue
-	err := json.Unmarshal(contents, &issue)
+	contents, err := j.buildAndExecRequest("GET", url)
 	if err != nil {
-		panic(err)
+		return
 	}
 
-	return issue
+	err = json.Unmarshal(contents, &issue)
+	return
 }

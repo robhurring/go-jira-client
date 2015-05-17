@@ -1,8 +1,8 @@
 package gojira
 
 import (
-	"fmt"
 	"encoding/json"
+	"fmt"
 )
 
 const (
@@ -28,24 +28,23 @@ type User struct {
 	AvatarUrls   map[string]string `json:"avatarUrls"`
 	Expand       string            `json:"expand"`
 	// "groups": {
-    //     "size": 3,
-    //     "items": [
-    //         {
-    //             "name": "jira-user",
-    //             "self": "http://www.example.com/jira/rest/api/2/group?groupname=jira-user"
-    //         },
-    //         {
-    //             "name": "jira-admin",
-    //             "self": "http://www.example.com/jira/rest/api/2/group?groupname=jira-admin"
-    //         },
-    //         {
-    //             "name": "important",
-    //             "self": "http://www.example.com/jira/rest/api/2/group?groupname=important"
-    //         }
-    //     ]
-    // }
+	//     "size": 3,
+	//     "items": [
+	//         {
+	//             "name": "jira-user",
+	//             "self": "http://www.example.com/jira/rest/api/2/group?groupname=jira-user"
+	//         },
+	//         {
+	//             "name": "jira-admin",
+	//             "self": "http://www.example.com/jira/rest/api/2/group?groupname=jira-admin"
+	//         },
+	//         {
+	//             "name": "important",
+	//             "self": "http://www.example.com/jira/rest/api/2/group?groupname=important"
+	//         }
+	//     ]
+	// }
 }
-
 
 /*
 Returns a user. This resource cannot be accessed anonymously.
@@ -57,24 +56,22 @@ Parameters
     username string The username
 
 Usage
-	
+
 	user, err := jira.User("username")
 	if err != nil {
 		fmt.Println(err.Error())
 	}
 	fmt.Printf("%+v\n", user)
 */
-func (j *Jira) User(username string) (*User, error) {
+func (j *Jira) User(username string) (user *User, err error) {
 	url := j.BaseUrl + j.ApiPath + user_url + "?username=" + username
-	contents := j.buildAndExecRequest("GET", url)
-
-	user := new(User)
-	err := json.Unmarshal(contents, &user)
+	contents, err := j.buildAndExecRequest("GET", url)
 	if err != nil {
-		fmt.Println("%s", err)
+		return
 	}
 
-	return user, err
+	err = json.Unmarshal(contents, user)
+	return
 }
 
 /*
@@ -92,12 +89,16 @@ Parameters
 				   	        your search results will be truncated.
 	includeActive   boolean If true, then active users are included in the results (default true)
 	includeInactive boolean If true, then inactive users are included in the results (default false)
-	
+
 */
-func (j *Jira) SearchUser(username string, startAt int, maxResults int, includeActive bool, includeInactive bool) {
+func (j *Jira) SearchUser(username string, startAt int, maxResults int, includeActive bool, includeInactive bool) (err error) {
 	url := j.BaseUrl + j.ApiPath + user_url + "?username=" + username
-	contents := j.buildAndExecRequest("GET", url)
+	contents, err := j.buildAndExecRequest("GET", url)
+	if err != nil {
+		return
+	}
+
 	fmt.Println(string(contents))
-	
-	// @todo
+
+	return
 }

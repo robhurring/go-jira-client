@@ -69,6 +69,8 @@ func (j *Jira) User(username string) (user *User, err error) {
 	if err != nil {
 		return
 	}
+	
+	user = &User{}
 
 	err = json.Unmarshal(contents, user)
 	return
